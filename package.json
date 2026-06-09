@@ -1,0 +1,27 @@
+{
+  "name": "restaurant-intelligence-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.13.1"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "turbo": "^2.9.16",
+    "typescript": "^5.9.2",
+    "eslint": "^9.35.0",
+    "prettier": "^3.6.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-unused-imports": "^4.4.1"
+  }
+}

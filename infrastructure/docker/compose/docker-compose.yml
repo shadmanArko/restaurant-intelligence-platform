@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17
+
+    container_name: rip-postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: rip_db
+      POSTGRES_USER: rip_user
+      POSTGRES_PASSWORD: rip_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:8-alpine
+
+    container_name: rip-redis
+
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:
