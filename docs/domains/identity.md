@@ -72,6 +72,7 @@ Represents a collection of permissions.
 
 Examples:
 
+* Founder
 * SuperAdmin
 * Owner
 * BranchManager
@@ -95,6 +96,65 @@ Rules:
 * Role assignment and removal must emit auditable events.
 * Platform-level roles and branch-scoped roles must be clearly distinguished.
 
+---
+
+## Ubiquitous Language
+
+### Actor
+
+A human or machine identity performing an action.
+
+### User
+
+A platform identity capable of authentication.
+
+### Customer
+
+A person or organization purchasing products from the business.
+
+Customers are not platform users.
+
+### Branch
+
+A physical or virtual operating location.
+
+### Permission
+
+A capability granted through one or more roles.
+
+### Role
+
+A collection of permissions.
+
+### Branch Access
+
+The relationship granting a user permissions within a branch.
+---
+
+## Identity Boundaries
+
+Identity owns:
+
+* Users
+* Roles
+* Permissions
+* Authentication
+* Authorization
+* Branch Access
+
+Identity does not own:
+
+* Customers
+* Suppliers
+* Employees
+* Orders
+* Inventory
+* Purchasing
+* Production
+* Accounting
+* Analytics
+
+Identity provides access control and audit attribution for other domains.
 ---
 
 # Permission
@@ -236,6 +296,23 @@ Rules:
 * Operational modules should depend on application authorization interfaces or verified authorization context.
 
 ---
+
+## Permission Resolution
+
+Effective permissions are calculated from:
+
+1. Global roles assigned directly to the user.
+2. Branch-scoped roles assigned through BranchAccess.
+
+Rules:
+
+* Global roles apply across all branches.
+* Branch-scoped roles apply only within the associated branch.
+* Branch-scoped authorization should be preferred for operational actions.
+* Permission evaluation must be deterministic and auditable.
+* Effective permissions are the union of all granted permissions.
+---
+
 
 # Audit Requirement
 
