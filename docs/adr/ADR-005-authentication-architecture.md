@@ -108,3 +108,24 @@ Negative:
 
 * Additional token management complexity
 * Refresh token persistence required
+
+---
+
+## Amendment: Lean JWT Claims
+
+Date: 2026-06-11
+
+Access tokens contain only `sub` (UserId) and `email`.
+
+Roles and branch access are excluded from the token.
+
+Rationale:
+
+Embedding roles in a stateless JWT creates a stale-read window equal to the
+token lifetime (15 minutes). During that window a revoked role would still
+appear authorized. Identity is the source of truth; authorization decisions
+must be resolved against Identity at request time via `AuthorizationService`.
+
+When cached permission claims become necessary (high-throughput, multi-region
+SaaS), introduce a short-lived permission cache invalidated by Identity domain
+events — not by inflating the JWT payload.

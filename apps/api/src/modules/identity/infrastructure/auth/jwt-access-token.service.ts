@@ -11,16 +11,11 @@ export class JwtAccessTokenService implements AccessTokenService {
   constructor(private readonly secret: string) {}
 
   issue(claims: AccessTokenClaims): string {
-    const payload = {
-      sub: claims.sub,
-      email: claims.email,
-      roles: claims.roles,
-      branchAccess: claims.branchAccess,
-    };
-    return jwt.sign(payload, this.secret, {
-      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
-      algorithm: 'HS256',
-    });
+    return jwt.sign(
+      { sub: claims.sub, email: claims.email },
+      this.secret,
+      { expiresIn: ACCESS_TOKEN_TTL_SECONDS, algorithm: 'HS256' },
+    );
   }
 
   verify(token: string): AccessTokenClaims {
@@ -31,8 +26,6 @@ export class JwtAccessTokenService implements AccessTokenService {
     return {
       sub: decoded['sub'] as string,
       email: decoded['email'] as string,
-      roles: decoded['roles'] as string[],
-      branchAccess: decoded['branchAccess'] as AccessTokenClaims['branchAccess'],
     };
   }
 }

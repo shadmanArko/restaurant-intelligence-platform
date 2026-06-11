@@ -54,7 +54,6 @@ export class LoginUseCase {
 
     const user = await this.users.findByEmail(email);
 
-    // User not found — emit LoginFailed with generic error (do not leak existence)
     if (user === null) {
       await this.events.publish([
         loginFailed({
@@ -68,7 +67,6 @@ export class LoginUseCase {
       throw new InvalidCredentialsError();
     }
 
-    // User must be Active to authenticate
     if (user.status !== UserStatus.Active) {
       await this.events.publish([
         loginFailed({
@@ -82,7 +80,6 @@ export class LoginUseCase {
       throw new UserNotAuthenticatableError();
     }
 
-    // Verify password
     const passwordHash = user.passwordHash;
     if (passwordHash === undefined) {
       await this.events.publish([
@@ -97,10 +94,7 @@ export class LoginUseCase {
       throw new InvalidCredentialsError();
     }
 
-    const passwordValid = await this.passwordVerifier.verify(
-      command.password,
-      passwordHash,
-    );
+    const passwordValid = await this.passwordVerifier.verify(command.password, passwordHash);
 
     if (!passwordValid) {
       await this.events.publish([
@@ -115,18 +109,13 @@ export class LoginUseCase {
       throw new InvalidCredentialsError();
     }
 
-    // Issue access token
+    // JWT carries identity only — roles/permissions are resolved at request
+    // time by AuthorizationService against Identity (source of truth).
     const accessToken = this.accessTokenService.issue({
       sub: user.id,
       email: user.email.value,
-      roles: user.roleIds,
-      branchAccess: user.branchAccess.map((ba) => ({
-        branchId: ba.branchId,
-        roleIds: ba.roleIds,
-      })),
     });
 
-    // Issue refresh token
     const rawToken = this.tokenHasher.generate();
     const tokenHash = this.tokenHasher.hash(rawToken);
     const expiresAt = new Date(
@@ -158,10 +147,6 @@ export class LoginUseCase {
       ...tokenEvents,
     ]);
 
-    return {
-      accessToken,
-      refreshToken: rawToken,
-      userId: user.id,
-    };
+    return { accessToken, refreshToken: rawToken, userId: user.id };
   }
 }

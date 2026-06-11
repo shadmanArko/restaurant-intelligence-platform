@@ -59,8 +59,6 @@ Properties:
 
 * UserId
 * Email
-* Roles
-* Branch Access Summary
 * IssuedAt
 * ExpiresAt
 
@@ -70,7 +68,15 @@ Rules:
 * Lifetime should be short.
 * Must not contain sensitive data.
 * Must not contain password hashes.
+* Must not contain roles or permissions — these are resolved at request time via AuthorizationService.
 * Must be cryptographically signed.
+
+Note:
+
+Roles and branch access are intentionally excluded from the token. Embedding
+authorization data in a stateless token creates a stale-read window (up to the
+token lifetime) where revoked roles would still appear valid. Identity remains
+the source of truth; AuthorizationService resolves permissions on every request.
 
 Initial Lifetime:
 

@@ -53,7 +53,7 @@ export class RefreshTokenUseCase {
     }
 
     if (oldToken.isRevoked) {
-      // Possible token theft — revoke all tokens for this user
+      // Presented revoked token — possible theft. Revoke all sessions.
       await this.refreshTokens.revokeAllForUser(oldToken.userId, occurredAt);
       throw new RefreshTokenRevokedError();
     }
@@ -62,24 +62,17 @@ export class RefreshTokenUseCase {
       throw new RefreshTokenExpiredError();
     }
 
-    // Load user for fresh claims
     const user = await this.users.findById(oldToken.userId);
     if (user === null) {
       throw new InvalidCredentialsError();
     }
 
-    // Issue fresh access token with current claims
+    // JWT carries identity only — authorization is resolved at request time.
     const accessToken = this.accessTokenService.issue({
       sub: user.id,
       email: user.email.value,
-      roles: user.roleIds,
-      branchAccess: user.branchAccess.map((ba) => ({
-        branchId: ba.branchId,
-        roleIds: ba.roleIds,
-      })),
     });
 
-    // Rotate: revoke old token, issue new token
     oldToken.revoke({ eventId: randomUUID(), occurredAt, correlationId: command.correlationId });
     await this.refreshTokens.save(oldToken);
 
@@ -118,10 +111,6 @@ export class RefreshTokenUseCase {
       ...newEvents,
     ]);
 
-    return {
-      accessToken,
-      refreshToken: rawNewToken,
-      userId: user.id,
-    };
+    return { accessToken, refreshToken: rawNewToken, userId: user.id };
   }
 }
