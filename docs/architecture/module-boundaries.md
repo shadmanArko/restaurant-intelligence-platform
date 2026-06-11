@@ -45,6 +45,58 @@ Analytics
 
 ---
 
+# Identity Module
+
+Owns:
+
+* Users
+* Roles
+* Permissions
+* Branches
+* Branch Access
+* Authentication
+* Authorization
+* Audit Attribution
+
+May publish:
+
+* UserRegistered
+* UserActivated
+* UserDeactivated
+* UserSuspended
+* UserReactivated
+* RoleAssigned
+* RoleRemoved
+* BranchAccessGranted
+* BranchAccessRevoked
+* LoginSucceeded
+* LoginFailed
+
+Consumes:
+
+* No operational domain events by default
+
+Must not own:
+
+* Customer Profiles
+* Employee Records
+* Inventory Data
+* Accounting Data
+* Orders
+* Production Data
+* Recipes
+* Menu Items
+
+Rules:
+
+* Identity is the source of truth for actor attribution.
+* Operational modules must not read Identity persistence internals directly.
+* Operational modules may receive verified actor and authorization context from application boundaries.
+* Operational modules may consume Identity events when they need authorization cache invalidation or audit enrichment.
+* Branch-scoped authorization should be preferred for operational actions.
+
+---
+
 # Customer Module
 
 Owns:

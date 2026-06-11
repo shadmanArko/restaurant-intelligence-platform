@@ -6,6 +6,7 @@ import { DRIZZLE_DB } from '@shared/infrastructure/database/database.tokens.js';
 
 import { BranchAccess } from '@modules/identity/domain/entities/branch-access.js';
 import { User } from '@modules/identity/domain/entities/user.js';
+import { UserStatus } from '@modules/identity/domain/enums/user-status.js';
 import { UserRepository } from '@modules/identity/domain/repositories/user.repository.js';
 import { EmailAddress } from '@modules/identity/domain/value-objects/email-address.js';
 import { UserId } from '@modules/identity/domain/value-objects/identity-id.js';
@@ -98,11 +99,11 @@ export class DrizzleUserRepository implements UserRepository {
       id: userRow.id,
       email: EmailAddress.create(userRow.email),
       displayName: userRow.displayName,
+      status: userRow.isActive ? UserStatus.Active : UserStatus.Inactive,
       roleIds: roleRows.map((row) => row.roleId),
       branchAccess: [...accessByBranch.entries()].map(([branchId, roleIds]) =>
         BranchAccess.create({ branchId, roleIds }),
       ),
-      isActive: userRow.isActive,
     });
   }
 }

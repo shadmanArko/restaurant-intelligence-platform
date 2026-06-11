@@ -8,7 +8,7 @@ Date: 2026-06-09
 
 The Restaurant Intelligence Platform requires authentication, authorization, branch access control, and auditability.
 
-Every action performed within the platform must be attributable to a user.
+Every action performed within the platform must be attributable to an actor.
 
 The platform must support:
 
@@ -28,7 +28,7 @@ Examples:
 * Accounting entries
 * Production batch creation
 
-must all be traceable to a user.
+must all be traceable to an actor.
 
 ---
 
@@ -39,6 +39,7 @@ The Identity Domain owns:
 * Users
 * Roles
 * Permissions
+* Branches
 * Branch Access
 
 Identity is responsible for:
@@ -47,6 +48,7 @@ Identity is responsible for:
 * Authorization
 * Access Control
 * Audit Attribution
+* Actor Modeling
 
 Identity is not responsible for business operations.
 
@@ -62,11 +64,15 @@ Role
 
 Permission
 
+Branch
+
 BranchAccess
 
 Authentication
 
 Authorization
+
+Audit Attribution
 
 ### Identity Does Not Own
 
@@ -104,6 +110,8 @@ Properties:
 * DisplayName
 * Status
 * BranchAccess
+* CreatedAt
+* UpdatedAt
 
 Status:
 
@@ -111,9 +119,19 @@ Status:
 * Inactive
 * Suspended
 
+Rules:
+
+* User email must be unique.
+* Suspended users cannot authenticate.
+* Inactive users cannot authenticate until reactivated.
+* PasswordHash must only contain a one-way password hash.
+* User lifecycle changes must emit auditable domain events.
+* User role changes must emit auditable domain events.
+* User branch access changes must emit auditable domain events.
+
 A User may belong to multiple branches.
 
-A User may have multiple roles.
+A User may have different roles in different branches.
 
 ---
 
@@ -133,6 +151,17 @@ Examples:
 
 Roles are collections of permissions.
 
+Role assignments may be:
+
+* Platform-level
+* Branch-scoped
+
+Branch-scoped roles are preferred for operational permissions.
+
+Global roles should be reserved for platform administration.
+
+Only SuperAdmin can create or assign SuperAdmin users.
+
 ---
 
 ## Permission
@@ -151,6 +180,10 @@ Examples:
 * analytics.view
 
 Permissions are immutable identifiers.
+
+Permission keys use dotted business capability format.
+
+Permission meaning must not change after creation.
 
 ---
 
@@ -176,6 +209,12 @@ Status:
 * Active
 * Inactive
 
+Rules:
+
+* Branch code must be unique.
+* Inactive branches cannot receive new operational actions.
+* Branch status changes must be auditable.
+
 ---
 
 ## Branch Access
@@ -199,6 +238,12 @@ Owner
 Branch B:
 KitchenManager
 
+Rules:
+
+* BranchAccess must contain at least one role.
+* BranchAccess grants and revocations must emit auditable events.
+* Submitted branch access data must be authorized against the actor performing the change.
+
 ---
 
 ## Authentication Strategy
@@ -208,6 +253,18 @@ Version 1:
 * Email + Password
 * Access Token
 * Refresh Token
+
+Password hashing:
+
+* Argon2 is required.
+* Password hashing is an infrastructure concern behind an application abstraction.
+* Plain text passwords must never be stored, logged, or published in events.
+
+Token storage:
+
+* Access tokens must be short-lived.
+* Refresh tokens must be stored securely.
+* Refresh token rotation should be supported.
 
 Version 2:
 
@@ -220,6 +277,28 @@ Future:
 * SSO
 * API Keys
 * Service Accounts
+* Machine Users
+* AI Agents
+
+---
+
+## Authorization Strategy
+
+Authorization determines whether an actor can perform an action.
+
+Authorization decisions should consider:
+
+* Actor UserId
+* BranchId where applicable
+* Permission Key
+* Target Resource where applicable
+
+Rules:
+
+* Authorization checks must be explicit in application workflows.
+* Submitted roleIds must never be trusted without actor authorization.
+* Operational modules must not bypass Identity authorization by reading Identity persistence internals.
+* Operational modules should receive verified actor and authorization context through application boundaries.
 
 ---
 
@@ -230,12 +309,28 @@ Identity publishes:
 * UserRegistered
 * UserActivated
 * UserDeactivated
+* UserSuspended
+* UserReactivated
 * RoleAssigned
 * RoleRemoved
 * BranchAccessGranted
 * BranchAccessRevoked
+* PasswordChanged
+* LoginSucceeded
+* LoginFailed
+* RefreshTokenRotated
 
-Identity consumes no external domain events.
+Identity consumes no external domain events by default.
+
+Identity events must include audit context where applicable:
+
+* Actor UserId
+* BranchId
+* Timestamp
+* CorrelationId
+* CausationId
+
+Events that change authorization must be persisted durably before operational modules depend on them.
 
 ---
 
@@ -251,19 +346,32 @@ Access Tokens must be short-lived.
 
 Authentication events must be auditable.
 
+Only SuperAdmin can create or assign SuperAdmin users.
+
+Authorization checks must be explicit in application workflows.
+
+Operational modules must not bypass Identity authorization by reading Identity persistence internals.
+
 ---
 
 ## Audit Requirements
 
 Every operational action in the system must record:
 
-* UserId
-* BranchId
+* Actor UserId
+* BranchId where applicable
 * Timestamp
-
-where applicable.
+* CorrelationId where applicable
+* CausationId where applicable
 
 Identity is the source of truth for user attribution.
+
+Identity must support reconstruction of:
+
+* Who performed an action
+* Which user, branch, role, or permission was affected
+* When the action occurred
+* Which workflow caused the action
 
 ---
 
@@ -277,9 +385,18 @@ Identity must support:
 * SaaS Multi-Tenancy
 * API Integrations
 * Machine Users
+* Service Accounts
 * AI Agents
 
 without requiring redesign.
+
+Scalability requirements:
+
+* Tenant and franchise boundaries must be introduced before SaaS deployment.
+* Authorization read paths may use cache or materialized grants.
+* Cached authorization data must be invalidated by Identity events.
+* Identity remains the source of truth even when authorization snapshots are cached.
+* Human users, machine users, service accounts, and AI agents must share a coherent actor model.
 
 ---
 
@@ -291,11 +408,14 @@ Positive:
 * Clear authorization model
 * Supports future growth
 * Supports multiple branches
+* Supports future non-human actors
 
 Negative:
 
 * Additional implementation complexity
 * Requires careful role design
 * Requires permission management tooling
+* Requires durable audit and event publishing strategy
+* Requires careful token and credential lifecycle management
 
 The benefits outweigh the complexity.

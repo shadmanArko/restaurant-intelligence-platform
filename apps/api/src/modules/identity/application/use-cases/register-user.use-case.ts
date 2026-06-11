@@ -4,6 +4,7 @@ import { DomainEventPublisher } from '@shared/application/domain-event-publisher
 
 import { BranchAccess } from '@modules/identity/domain/entities/branch-access.js';
 import { User } from '@modules/identity/domain/entities/user.js';
+import { UserStatus } from '@modules/identity/domain/enums/user-status.js';
 import { UserRepository } from '@modules/identity/domain/repositories/user.repository.js';
 import { EmailAddress } from '@modules/identity/domain/value-objects/email-address.js';
 import { BranchId, RoleId, UserId } from '@modules/identity/domain/value-objects/identity-id.js';
@@ -42,11 +43,11 @@ export class RegisterUserUseCase {
       id: randomUUID(),
       email,
       displayName: command.displayName,
+      status: UserStatus.Active,
       roleIds: command.roleIds,
       branchAccess: command.branchAccess.map((access) =>
         BranchAccess.create(access),
       ),
-      isActive: true,
       eventId: randomUUID(),
       occurredAt: new Date(),
     });
